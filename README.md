@@ -1,4 +1,4 @@
-<div class="markdown prose dark:prose-invert w-full break-words dark"><h1 data-start="0" data-end="69" class=""><strong data-start="2" data-end="67">Comprehensive User &amp; Administrator Guide for&nbsp;<code data-start="49" data-end="65">key_scanner.py</code></strong></h1>
+<div class="markdown prose dark:prose-invert w-full break-words dark"><h1 data-start="0" data-end="69" class=""><strong data-start="2" data-end="67">Comprehensive User &amp; Administrator Guide for&nbsp;<code data-start="49" data-end="65">Scanner.py</code></strong></h1>
 <p data-start="70" data-end="131" class=""><em data-start="70" data-end="129">(Version: 2.0 ‑ High‑Performance, Cross‑Platform Edition)</em></p>
 <hr data-start="133" data-end="136" class="">
 <h2 data-start="138" data-end="156" class="">1&nbsp;&nbsp;Introduction</h2>
