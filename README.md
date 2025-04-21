@@ -1,138 +1,251 @@
-Detailed Summary
-
-This cross-platform Python script is designed to search through a user-specified directory (and all of its subdirectories) for potential private keys formatted in Base58. It not only identifies these keys but also converts each found key into its Wallet Import Format (WIF) version. The script is carefully built to work on both Linux and Windows operating systems.
-
-Core Functionality
-
-1. Directory Validation:
-
-Function: validate_path
-
-Purpose: Ensures that the user-provided directory path exists and is indeed a directory. This check works on any operating system.
-
-Usage: Before scanning begins, the script validates the input. If the path is invalid, it outputs an error message and terminates the execution.
-
-
-
-2. Recursive Directory Scanning:
-
-Function: scan_directory_for_private_keys
-
-Purpose: Walks through the specified directory and all its subdirectories, examining every file.
-
-How It Works:
-
-Uses Python’s os.walk to iterate through directories.
-
-For each file encountered, the script attempts to open it in binary mode.
-
-The file content is then decoded using UTF-8 (ignoring any errors), which allows the script to handle files with non-text data.
-
-A precompiled regular expression (BASE58_REGEX) is used to search the decoded text for strings matching the Base58 format (defined by the pattern [13][a-km-zA-HJ-NP-Z0-9]{52}).
-
-If a match is found, the key is added to a set, automatically removing any duplicate keys.
-
-The script prints progress messages indicating which directories are being scanned, when keys are found, and if any files are skipped due to permission issues or other errors.
-
-
-
-
-3. Private Key Conversion:
-
-Function: convert_base58_to_wif
-
-Purpose: Converts a found Base58 private key to its Wallet Import Format (WIF) version.
-
-Conversion Logic:
-
-If the key length is 52, it prepends the prefix '80' to the key.
-
-Otherwise, it uses the prefix '00'.
-
-
-This conversion process is a simplified version and assumes that the prefixing is sufficient for the intended use case.
-
-
-
-4. User Interaction and Script Flow:
-
-Main Function: main
-
-Steps:
-
-1. User Input: Prompts the user to enter a valid directory path. The prompt is designed to accommodate both Windows (e.g., C:\Users\User) and Linux (e.g., /home/user) path formats.
-
-
-2. Validation: Uses the validate_path function to confirm that the path is correct.
-
-
-3. Scanning: If the path is valid, the script starts scanning the directory recursively using the scan_directory_for_private_keys function.
-
-
-4. Displaying Results: Once the scan is complete, the script:
-
-Prints all found private keys.
-
-Converts each key to its WIF version using the convert_base58_to_wif function.
-
-Outputs both the original key and its corresponding WIF version.
-
-
-
-5. Error Handling: Throughout the process, if any errors occur (like permission issues or file not found), the script logs these events to the console and continues processing the remaining files.
-
-
-
-
-
-
-How to Use the Script
-
-1. Preparation:
-
-Ensure you have Python installed on your system.
-
-Save the script to a file, for example, key_scanner.py.
-
-
-
-2. Running the Script:
-
-Open a terminal or command prompt.
-
-Navigate to the directory where you saved the script.
-
-Execute the script by typing:
-
-python key_scanner.py
-
-When prompted, enter a valid directory path where you want the scan to begin. You can enter a path in either Windows or Linux format depending on your operating system.
-
-
-
-3. Understanding the Output:
-
-The script will display messages as it scans each directory.
-
-For every file it processes, if a Base58 private key is found, it will print:
-
-A message indicating the file in which the key was discovered.
-
-The key itself.
-
-The converted WIF version of the key.
-
-
-If no keys are found, it will simply inform you that no private keys were detected.
-
-
-
-4. Handling Errors:
-
-If the script encounters files it cannot access due to permission restrictions or other errors, it will skip those files and continue scanning the rest of the directory.
-
-An invalid path will prompt an error message and the script will exit.
-
-
-
-
+<div class="markdown prose dark:prose-invert w-full break-words dark"><h1 data-start="0" data-end="69" class=""><strong data-start="2" data-end="67">Comprehensive User &amp; Administrator Guide for&nbsp;<code data-start="49" data-end="65">key_scanner.py</code></strong></h1>
+<p data-start="70" data-end="131" class=""><em data-start="70" data-end="129">(Version: 2.0 ‑ High‑Performance, Cross‑Platform Edition)</em></p>
+<hr data-start="133" data-end="136" class="">
+<h2 data-start="138" data-end="156" class="">1&nbsp;&nbsp;Introduction</h2>
+<p data-start="158" data-end="307" class=""><code data-start="158" data-end="174">key_scanner.py</code> is a single‑file, batteries‑included utility that <strong data-start="225" data-end="266">hunts for Base58‑encoded private keys</strong> anywhere inside a directory tree. It is:</p>
+<ul data-start="309" data-end="686">
+<li data-start="309" data-end="377" class="">
+<p data-start="311" data-end="377" class=""><strong data-start="311" data-end="329">Cross‑platform</strong> – runs unchanged on Linux, Windows, or macOS.</p>
+</li>
+<li data-start="378" data-end="525" class="">
+<p data-start="380" data-end="525" class=""><strong data-start="380" data-end="400">High‑performance</strong> – leverages <strong data-start="413" data-end="436">memory‑mapped files</strong> and a <strong data-start="443" data-end="475">multi‑threaded scanning core</strong> to chew through multi‑gigabyte folders quickly.</p>
+</li>
+<li data-start="526" data-end="686" class="">
+<p data-start="528" data-end="686" class=""><strong data-start="528" data-end="544">Feature‑rich</strong> – offers quiet mode, automatic de‑duplication, optional WIF conversion, configurable thread counts, file‑size skipping, and export to disk.</p>
+</li>
+</ul>
+<p data-start="688" data-end="924" class="">Whether you are a security researcher validating that no stray keys exist in a codebase, an IT admin scanning user home folders, or a developer integrating a check into a CI pipeline, this tool delivers deterministic, auditable results.</p>
+<hr data-start="926" data-end="929" class="">
+<h2 data-start="931" data-end="956" class="">2&nbsp;&nbsp;System Requirements</h2>
+<div class="group pointer-events-none relative flex justify-center *:pointer-events-auto"><span class="pointer-events-none absolute start-full top-4 z-10 hidden h-full w-fit ps-2 md:block" data-state="closed"><button class="hover:bg-token-main-surface-secondary text-token-text-secondary pointer-events-auto rounded-lg px-1 py-1 opacity-0 transition-opacity duration-200 group-focus-within:opacity-100 group-hover:opacity-100"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="icon-md-heavy"><path fill-rule="evenodd" clip-rule="evenodd" d="M7 5C7 3.34315 8.34315 2 10 2H19C20.6569 2 22 3.34315 22 5V14C22 15.6569 20.6569 17 19 17H17V19C17 20.6569 15.6569 22 14 22H5C3.34315 22 2 20.6569 2 19V10C2 8.34315 3.34315 7 5 7H7V5ZM9 7H14C15.6569 7 17 8.34315 17 10V15H19C19.5523 15 20 14.5523 20 14V5C20 4.44772 19.5523 4 19 4H10C9.44772 4 9 4.44772 9 5V7ZM5 9C4.44772 9 4 9.44772 4 10V19C4 19.5523 4.44772 20 5 20H14C14.5523 20 15 19.5523 15 19V10C15 9.44772 14.5523 9 14 9H5Z" fill="currentColor"></path></svg></button></span><div class="tableContainer horzScrollShadows relative"><table class="min-w-full" data-start="958" data-end="1385"><thead data-start="958" data-end="983"><tr data-start="958" data-end="983"><th data-start="958" data-end="972">Requirement</th><th data-start="972" data-end="983">Details</th></tr></thead><tbody data-start="1010" data-end="1385"><tr data-start="1010" data-end="1095"><td class="max-w-[calc(var(--thread-content-max-width)*2/3)]" data-start="1010" data-end="1024"><strong data-start="1012" data-end="1022">Python</strong></td><td class="max-w-[calc(var(--thread-content-max-width)*2/3)] min-w-[calc(var(--thread-content-max-width)/3)]" data-start="1024" data-end="1095">CPython&nbsp;3.8&nbsp;or newer (uses <code data-start="1053" data-end="1062">pathlib</code>, <code data-start="1064" data-end="1070">mmap</code>, <code data-start="1072" data-end="1092">concurrent.futures</code>)</td></tr><tr data-start="1096" data-end="1192"><td class="max-w-[calc(var(--thread-content-max-width)*2/3)]" data-start="1096" data-end="1110"><strong data-start="1098" data-end="1104">OS</strong></td><td class="max-w-[calc(var(--thread-content-max-width)*2/3)] min-w-[calc(var(--thread-content-max-width)/3)]" data-start="1110" data-end="1192">Windows&nbsp;10+ / Ubuntu&nbsp;20.04+ / macOS&nbsp;10.15+ (no native extensions; pure Python)</td></tr><tr data-start="1193" data-end="1278"><td class="max-w-[calc(var(--thread-content-max-width)*2/3)]" data-start="1193" data-end="1207"><strong data-start="1195" data-end="1202">CPU</strong></td><td class="max-w-[calc(var(--thread-content-max-width)*2/3)] min-w-[calc(var(--thread-content-max-width)/3)]" data-start="1207" data-end="1278">Any modern x86‑64 or ARM; hyper‑threading beneficial for IO overlap</td></tr><tr data-start="1279" data-end="1385"><td class="max-w-[calc(var(--thread-content-max-width)*2/3)]" data-start="1279" data-end="1293"><strong data-start="1281" data-end="1291">Memory</strong></td><td class="max-w-[calc(var(--thread-content-max-width)*2/3)] min-w-[calc(var(--thread-content-max-width)/2)]" data-start="1293" data-end="1385">Negligible overhead (‑‑ uses file‑mapping, not full reads); 128&nbsp;MiB free RAM recommended</td></tr></tbody></table></div></div>
+<p data-start="1387" data-end="1500" class="">No third‑party packages are needed. Simply clone or copy the file into any workstation or server that has Python.</p>
+<hr data-start="1502" data-end="1505" class="">
+<h2 data-start="1507" data-end="1525" class="">3&nbsp;&nbsp;Installation</h2>
+<ol data-start="1527" data-end="1836">
+<li data-start="1527" data-end="1583" class="">
+<p data-start="1530" data-end="1583" class=""><strong data-start="1530" data-end="1553">Download the script</strong> (save as <code data-start="1563" data-end="1579">key_scanner.py</code>).</p>
+</li>
+<li data-start="1584" data-end="1652" class="">
+<p data-start="1587" data-end="1652" class=""><strong data-start="1587" data-end="1606">Verify checksum</strong> if you obtained it from an external source.</p>
+</li>
+<li data-start="1653" data-end="1747" class="">
+<p data-start="1656" data-end="1700" class=""><strong data-start="1656" data-end="1683">Ensure it is executable</strong> (Linux/macOS):</p>
+<pre class="overflow-visible!" data-start="1704" data-end="1747"><div class="contain-inline-size rounded-md border-[0.5px] border-token-border-medium relative bg-token-sidebar-surface-primary"><div class="flex items-center text-token-text-secondary px-4 py-2 text-xs font-sans justify-between h-9 bg-token-sidebar-surface-primary dark:bg-token-main-surface-secondary select-none rounded-t-[5px]">bash</div><div class="sticky top-9"><div class="absolute end-0 bottom-0 flex h-9 items-center pe-2"><div class="bg-token-sidebar-surface-primary text-token-text-secondary dark:bg-token-main-surface-secondary flex items-center rounded-sm px-2 font-sans text-xs"><span class="" data-state="closed"><button class="flex gap-1 items-center select-none px-4 py-1" aria-label="Copy"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="icon-xs"><path fill-rule="evenodd" clip-rule="evenodd" d="M7 5C7 3.34315 8.34315 2 10 2H19C20.6569 2 22 3.34315 22 5V14C22 15.6569 20.6569 17 19 17H17V19C17 20.6569 15.6569 22 14 22H5C3.34315 22 2 20.6569 2 19V10C2 8.34315 3.34315 7 5 7H7V5ZM9 7H14C15.6569 7 17 8.34315 17 10V15H19C19.5523 15 20 14.5523 20 14V5C20 4.44772 19.5523 4 19 4H10C9.44772 4 9 4.44772 9 5V7ZM5 9C4.44772 9 4 9.44772 4 10V19C4 19.5523 4.44772 20 5 20H14C14.5523 20 15 19.5523 15 19V10C15 9.44772 14.5523 9 14 9H5Z" fill="currentColor"></path></svg>Copy</button></span><span class="" data-state="closed"><button class="flex items-center gap-1 px-4 py-1 select-none"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="icon-xs"><path d="M2.5 5.5C4.3 5.2 5.2 4 5.5 2.5C5.8 4 6.7 5.2 8.5 5.5C6.7 5.8 5.8 7 5.5 8.5C5.2 7 4.3 5.8 2.5 5.5Z" fill="currentColor" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"></path><path d="M5.66282 16.5231L5.18413 19.3952C5.12203 19.7678 5.09098 19.9541 5.14876 20.0888C5.19933 20.2067 5.29328 20.3007 5.41118 20.3512C5.54589 20.409 5.73218 20.378 6.10476 20.3159L8.97693 19.8372C9.72813 19.712 10.1037 19.6494 10.4542 19.521C10.7652 19.407 11.0608 19.2549 11.3343 19.068C11.6425 18.8575 11.9118 18.5882 12.4503 18.0497L20 10.5C21.3807 9.11929 21.3807 6.88071 20 5.5C18.6193 4.11929 16.3807 4.11929 15 5.5L7.45026 13.0497C6.91175 13.5882 6.6425 13.8575 6.43197 14.1657C6.24513 14.4392 6.09299 14.7348 5.97903 15.0458C5.85062 15.3963 5.78802 15.7719 5.66282 16.5231Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path><path d="M14.5 7L18.5 11" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>Edit</button></span></div></div></div><div class="overflow-y-auto p-4" dir="ltr"><code class="whitespace-pre! language-bash"><span><span><span class="hljs-built_in">chmod</span></span><span> +x key_scanner.py
+</span></span></code></div></div></pre>
+</li>
+<li data-start="1748" data-end="1836" class="">
+<p data-start="1751" data-end="1836" class=""><strong data-start="1751" data-end="1779">(Optional) Add to&nbsp;<code data-start="1771" data-end="1777">PATH</code></strong> or place in a tools directory used by your automation.</p>
+</li>
+</ol>
+<p data-start="1838" data-end="1884" class="">You are now ready to run the program directly:</p>
+<pre class="overflow-visible!" data-start="1886" data-end="1926"><div class="contain-inline-size rounded-md border-[0.5px] border-token-border-medium relative bg-token-sidebar-surface-primary"><div class="flex items-center text-token-text-secondary px-4 py-2 text-xs font-sans justify-between h-9 bg-token-sidebar-surface-primary dark:bg-token-main-surface-secondary select-none rounded-t-[5px]">bash</div><div class="sticky top-9"><div class="absolute end-0 bottom-0 flex h-9 items-center pe-2"><div class="bg-token-sidebar-surface-primary text-token-text-secondary dark:bg-token-main-surface-secondary flex items-center rounded-sm px-2 font-sans text-xs"><span class="" data-state="closed"><button class="flex gap-1 items-center select-none px-4 py-1" aria-label="Copy"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="icon-xs"><path fill-rule="evenodd" clip-rule="evenodd" d="M7 5C7 3.34315 8.34315 2 10 2H19C20.6569 2 22 3.34315 22 5V14C22 15.6569 20.6569 17 19 17H17V19C17 20.6569 15.6569 22 14 22H5C3.34315 22 2 20.6569 2 19V10C2 8.34315 3.34315 7 5 7H7V5ZM9 7H14C15.6569 7 17 8.34315 17 10V15H19C19.5523 15 20 14.5523 20 14V5C20 4.44772 19.5523 4 19 4H10C9.44772 4 9 4.44772 9 5V7ZM5 9C4.44772 9 4 9.44772 4 10V19C4 19.5523 4.44772 20 5 20H14C14.5523 20 15 19.5523 15 19V10C15 9.44772 14.5523 9 14 9H5Z" fill="currentColor"></path></svg>Copy</button></span><span class="" data-state="closed"><button class="flex items-center gap-1 px-4 py-1 select-none"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="icon-xs"><path d="M2.5 5.5C4.3 5.2 5.2 4 5.5 2.5C5.8 4 6.7 5.2 8.5 5.5C6.7 5.8 5.8 7 5.5 8.5C5.2 7 4.3 5.8 2.5 5.5Z" fill="currentColor" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"></path><path d="M5.66282 16.5231L5.18413 19.3952C5.12203 19.7678 5.09098 19.9541 5.14876 20.0888C5.19933 20.2067 5.29328 20.3007 5.41118 20.3512C5.54589 20.409 5.73218 20.378 6.10476 20.3159L8.97693 19.8372C9.72813 19.712 10.1037 19.6494 10.4542 19.521C10.7652 19.407 11.0608 19.2549 11.3343 19.068C11.6425 18.8575 11.9118 18.5882 12.4503 18.0497L20 10.5C21.3807 9.11929 21.3807 6.88071 20 5.5C18.6193 4.11929 16.3807 4.11929 15 5.5L7.45026 13.0497C6.91175 13.5882 6.6425 13.8575 6.43197 14.1657C6.24513 14.4392 6.09299 14.7348 5.97903 15.0458C5.85062 15.3963 5.78802 15.7719 5.66282 16.5231Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path><path d="M14.5 7L18.5 11" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>Edit</button></span></div></div></div><div class="overflow-y-auto p-4" dir="ltr"><code class="whitespace-pre! language-bash"><span><span>python key_scanner.py --</span><span><span class="hljs-built_in">help</span></span><span>
+</span></span></code></div></div></pre>
+<hr data-start="1928" data-end="1931" class="">
+<h2 data-start="1933" data-end="1987" class="">4&nbsp;&nbsp;The Base58 &amp; WIF Primer (What We’re Looking For)</h2>
+<ul data-start="1989" data-end="2628">
+<li data-start="1989" data-end="2133" class="">
+<p data-start="1991" data-end="2133" class=""><strong data-start="1991" data-end="2001">Base58</strong> – An alphabet (0‑9, A‑Z, a‑z minus visually confusing symbols) widely used by Bitcoin and other crypto systems to represent keys.</p>
+</li>
+<li data-start="2134" data-end="2276" class="">
+<p data-start="2136" data-end="2276" class=""><strong data-start="2136" data-end="2154">Pattern Sought</strong> – The script’s default regex matches 53‑character strings beginning with <code data-start="2228" data-end="2231">1</code> or <code data-start="2235" data-end="2238">3</code> followed by 52 more Base58 symbols.</p>
+</li>
+<li data-start="2277" data-end="2628" class="">
+<p data-start="2279" data-end="2462" class=""><strong data-start="2279" data-end="2309">WIF (Wallet&nbsp;Import&nbsp;Format)</strong> – A human‑enterable form of a private key that prepends a network/version byte then Base58‑encodes. In this utility, a <strong data-start="2429" data-end="2450">simplified prefix</strong> is applied:</p>
+<ul data-start="2465" data-end="2628">
+<li data-start="2465" data-end="2492" class="">
+<p data-start="2467" data-end="2492" class="">length&nbsp;=&nbsp;52 ⇒ prefix&nbsp;<code data-start="2488" data-end="2492">80</code></p>
+</li>
+<li data-start="2495" data-end="2628" class="">
+<p data-start="2497" data-end="2628" class="">otherwise ⇒ prefix&nbsp;<code data-start="2516" data-end="2520">00</code><br data-start="2520" data-end="2523">
+(Perfectly adequate for identifying duplicates or quick wallet imports; not a full Bitcoin‑Core check.)</p>
+</li>
+</ul>
+</li>
+</ul>
+<hr data-start="2630" data-end="2633" class="">
+<h2 data-start="2635" data-end="2679" class="">5&nbsp;&nbsp;Command‑Line Interface (CLI) Deep Dive</h2>
+<div class="group pointer-events-none relative flex justify-center *:pointer-events-auto"><span class="pointer-events-none absolute start-full top-4 z-10 hidden h-full w-fit ps-2 md:block" data-state="closed"><button class="hover:bg-token-main-surface-secondary text-token-text-secondary pointer-events-auto rounded-lg px-1 py-1 opacity-0 transition-opacity duration-200 group-focus-within:opacity-100 group-hover:opacity-100"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="icon-md-heavy"><path fill-rule="evenodd" clip-rule="evenodd" d="M7 5C7 3.34315 8.34315 2 10 2H19C20.6569 2 22 3.34315 22 5V14C22 15.6569 20.6569 17 19 17H17V19C17 20.6569 15.6569 22 14 22H5C3.34315 22 2 20.6569 2 19V10C2 8.34315 3.34315 7 5 7H7V5ZM9 7H14C15.6569 7 17 8.34315 17 10V15H19C19.5523 15 20 14.5523 20 14V5C20 4.44772 19.5523 4 19 4H10C9.44772 4 9 4.44772 9 5V7ZM5 9C4.44772 9 4 9.44772 4 10V19C4 19.5523 4.44772 20 5 20H14C14.5523 20 15 19.5523 15 19V10C15 9.44772 14.5523 9 14 9H5Z" fill="currentColor"></path></svg></button></span><div class="tableContainer horzScrollShadows relative"><table class="min-w-full" data-start="2681" data-end="3239"><thead data-start="2681" data-end="2735"><tr data-start="2681" data-end="2735"><th data-start="2681" data-end="2690">Switch</th><th data-start="2690" data-end="2702">Long Form</th><th data-start="2702" data-end="2714">Parameter</th><th data-start="2714" data-end="2724">Default</th><th data-start="2724" data-end="2735">Purpose</th></tr></thead><tbody data-start="2791" data-end="3239"><tr data-start="2791" data-end="2848"><td class="max-w-[calc(var(--thread-content-max-width)*2/3)]" data-start="2791" data-end="2800"><code data-start="2793" data-end="2799">path</code></td><td class="max-w-[calc(var(--thread-content-max-width)*2/3)]" data-start="2800" data-end="2804">—</td><td class="max-w-[calc(var(--thread-content-max-width)*2/3)]" data-start="2804" data-end="2816">directory</td><td class="max-w-[calc(var(--thread-content-max-width)*2/3)]" data-start="2816" data-end="2822"><code data-start="2818" data-end="2821">.</code></td><td class="max-w-[calc(var(--thread-content-max-width)*2/3)]" data-start="2822" data-end="2848">Root directory to scan</td></tr><tr data-start="2849" data-end="2923"><td class="max-w-[calc(var(--thread-content-max-width)*2/3)]" data-start="2849" data-end="2856"><code data-start="2851" data-end="2855">-q</code></td><td class="max-w-[calc(var(--thread-content-max-width)*2/3)]" data-start="2856" data-end="2868"><code data-start="2858" data-end="2867">--quiet</code></td><td class="max-w-[calc(var(--thread-content-max-width)*2/3)]" data-start="2868" data-end="2872">—</td><td class="max-w-[calc(var(--thread-content-max-width)*2/3)]" data-start="2872" data-end="2878">off</td><td class="max-w-[calc(var(--thread-content-max-width)*2/3)] min-w-[calc(var(--thread-content-max-width)/3)]" data-start="2878" data-end="2923">Suppress per‑directory &amp; per‑file chatter</td></tr><tr data-start="2924" data-end="2987"><td class="max-w-[calc(var(--thread-content-max-width)*2/3)]" data-start="2924" data-end="2931"><code data-start="2926" data-end="2930">-o</code></td><td class="max-w-[calc(var(--thread-content-max-width)*2/3)]" data-start="2931" data-end="2944"><code data-start="2933" data-end="2943">--output</code></td><td class="max-w-[calc(var(--thread-content-max-width)*2/3)]" data-start="2944" data-end="2951">FILE</td><td class="max-w-[calc(var(--thread-content-max-width)*2/3)]" data-start="2951" data-end="2955">—</td><td class="max-w-[calc(var(--thread-content-max-width)*2/3)]" data-start="2955" data-end="2987">Save raw keys (one per line)</td></tr><tr data-start="2988" data-end="3051"><td class="max-w-[calc(var(--thread-content-max-width)*2/3)]" data-start="2988" data-end="2992">—</td><td class="max-w-[calc(var(--thread-content-max-width)*2/3)]" data-start="2992" data-end="3007"><code data-start="2994" data-end="3006">--show-wif</code></td><td class="max-w-[calc(var(--thread-content-max-width)*2/3)]" data-start="3007" data-end="3011">—</td><td class="max-w-[calc(var(--thread-content-max-width)*2/3)]" data-start="3011" data-end="3017">off</td><td class="max-w-[calc(var(--thread-content-max-width)*2/3)]" data-start="3017" data-end="3051">Emit WIF form beneath each key</td></tr><tr data-start="3052" data-end="3114"><td class="max-w-[calc(var(--thread-content-max-width)*2/3)]" data-start="3052" data-end="3056">—</td><td class="max-w-[calc(var(--thread-content-max-width)*2/3)]" data-start="3056" data-end="3070"><code data-start="3058" data-end="3069">--workers</code></td><td class="max-w-[calc(var(--thread-content-max-width)*2/3)]" data-start="3070" data-end="3076">INT</td><td class="max-w-[calc(var(--thread-content-max-width)*2/3)]" data-start="3076" data-end="3094"><code data-start="3078" data-end="3093">max(4, CPU×2)</code></td><td class="max-w-[calc(var(--thread-content-max-width)*2/3)]" data-start="3094" data-end="3114">Thread pool size</td></tr><tr data-start="3115" data-end="3187"><td class="max-w-[calc(var(--thread-content-max-width)*2/3)]" data-start="3115" data-end="3119">—</td><td class="max-w-[calc(var(--thread-content-max-width)*2/3)]" data-start="3119" data-end="3134"><code data-start="3121" data-end="3133">--max-size</code></td><td class="max-w-[calc(var(--thread-content-max-width)*2/3)]" data-start="3134" data-end="3139">MB</td><td class="max-w-[calc(var(--thread-content-max-width)*2/3)]" data-start="3139" data-end="3146">none</td><td class="max-w-[calc(var(--thread-content-max-width)*2/3)]" data-start="3146" data-end="3187">Skip files larger than the given size</td></tr><tr data-start="3188" data-end="3239"><td class="max-w-[calc(var(--thread-content-max-width)*2/3)]" data-start="3188" data-end="3195"><code data-start="3190" data-end="3194">-h</code></td><td class="max-w-[calc(var(--thread-content-max-width)*2/3)]" data-start="3195" data-end="3206"><code data-start="3197" data-end="3205">--help</code></td><td class="max-w-[calc(var(--thread-content-max-width)*2/3)]" data-start="3206" data-end="3210">—</td><td class="max-w-[calc(var(--thread-content-max-width)*2/3)]" data-start="3210" data-end="3214">—</td><td class="max-w-[calc(var(--thread-content-max-width)*2/3)]" data-start="3214" data-end="3239">Display help synopsis</td></tr></tbody></table></div></div>
+<h3 data-start="3241" data-end="3266" class="">5.1&nbsp;Usage Cheat‑Sheet</h3>
+<pre class="overflow-visible!" data-start="3268" data-end="3595"><div class="contain-inline-size rounded-md border-[0.5px] border-token-border-medium relative bg-token-sidebar-surface-primary"><div class="flex items-center text-token-text-secondary px-4 py-2 text-xs font-sans justify-between h-9 bg-token-sidebar-surface-primary dark:bg-token-main-surface-secondary select-none rounded-t-[5px]">bash</div><div class="sticky top-9"><div class="absolute end-0 bottom-0 flex h-9 items-center pe-2"><div class="bg-token-sidebar-surface-primary text-token-text-secondary dark:bg-token-main-surface-secondary flex items-center rounded-sm px-2 font-sans text-xs"><span class="" data-state="closed"><button class="flex gap-1 items-center select-none px-4 py-1" aria-label="Copy"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="icon-xs"><path fill-rule="evenodd" clip-rule="evenodd" d="M7 5C7 3.34315 8.34315 2 10 2H19C20.6569 2 22 3.34315 22 5V14C22 15.6569 20.6569 17 19 17H17V19C17 20.6569 15.6569 22 14 22H5C3.34315 22 2 20.6569 2 19V10C2 8.34315 3.34315 7 5 7H7V5ZM9 7H14C15.6569 7 17 8.34315 17 10V15H19C19.5523 15 20 14.5523 20 14V5C20 4.44772 19.5523 4 19 4H10C9.44772 4 9 4.44772 9 5V7ZM5 9C4.44772 9 4 9.44772 4 10V19C4 19.5523 4.44772 20 5 20H14C14.5523 20 15 19.5523 15 19V10C15 9.44772 14.5523 9 14 9H5Z" fill="currentColor"></path></svg>Copy</button></span><span class="" data-state="closed"><button class="flex items-center gap-1 px-4 py-1 select-none"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="icon-xs"><path d="M2.5 5.5C4.3 5.2 5.2 4 5.5 2.5C5.8 4 6.7 5.2 8.5 5.5C6.7 5.8 5.8 7 5.5 8.5C5.2 7 4.3 5.8 2.5 5.5Z" fill="currentColor" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"></path><path d="M5.66282 16.5231L5.18413 19.3952C5.12203 19.7678 5.09098 19.9541 5.14876 20.0888C5.19933 20.2067 5.29328 20.3007 5.41118 20.3512C5.54589 20.409 5.73218 20.378 6.10476 20.3159L8.97693 19.8372C9.72813 19.712 10.1037 19.6494 10.4542 19.521C10.7652 19.407 11.0608 19.2549 11.3343 19.068C11.6425 18.8575 11.9118 18.5882 12.4503 18.0497L20 10.5C21.3807 9.11929 21.3807 6.88071 20 5.5C18.6193 4.11929 16.3807 4.11929 15 5.5L7.45026 13.0497C6.91175 13.5882 6.6425 13.8575 6.43197 14.1657C6.24513 14.4392 6.09299 14.7348 5.97903 15.0458C5.85062 15.3963 5.78802 15.7719 5.66282 16.5231Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path><path d="M14.5 7L18.5 11" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>Edit</button></span></div></div></div><div class="overflow-y-auto p-4" dir="ltr"><code class="whitespace-pre! language-bash"><span><span><span class="hljs-comment"># Full help</span></span><span>
+python key_scanner.py --</span><span><span class="hljs-built_in">help</span></span><span>
+
+</span><span><span class="hljs-comment"># Minimal run (current directory)</span></span><span>
+python key_scanner.py .
+
+</span><span><span class="hljs-comment"># Silenced scan with WIF output</span></span><span>
+python key_scanner.py /srv/data -q --show-wif
+
+</span><span><span class="hljs-comment"># High‑concurrency scan, ignore ≥50&nbsp;MB files, export keys</span></span><span>
+python key_scanner.py C:\Backups --workers 16 --max-size 50 -o found_keys.txt
+</span></span></code></div></div></pre>
+<hr data-start="3597" data-end="3600" class="">
+<h2 data-start="3602" data-end="3632" class="">6&nbsp;&nbsp;Execution Flow Explained</h2>
+<ol data-start="3634" data-end="4858">
+<li data-start="3634" data-end="3746" class="">
+<p data-start="3637" data-end="3746" class=""><strong data-start="3637" data-end="3657">Argument Parsing</strong> – <code data-start="3660" data-end="3670">argparse</code> validates parameters; illegal options trigger a clear error and exit&nbsp;<code data-start="3740" data-end="3743">1</code>.</p>
+</li>
+<li data-start="3747" data-end="3848" class="">
+<p data-start="3750" data-end="3848" class=""><strong data-start="3750" data-end="3769">Path Validation</strong> – Confirms the root exists and is a directory using <code data-start="3822" data-end="3845">pathlib.Path.is_dir()</code>.</p>
+</li>
+<li data-start="3849" data-end="4051" class="">
+<p data-start="3852" data-end="3879" class=""><strong data-start="3852" data-end="3877">Directory Enumeration</strong></p>
+<ul data-start="3883" data-end="4051">
+<li data-start="3883" data-end="3981" class="">
+<p data-start="3885" data-end="3981" class="">Uses <strong data-start="3890" data-end="3906"><code data-start="3892" data-end="3904">os.scandir</code></strong> (faster than <code data-start="3920" data-end="3929">os.walk</code>) in a depth‑first stack to accumulate file paths.</p>
+</li>
+<li data-start="3985" data-end="4051" class="">
+<p data-start="3987" data-end="4051" class="">Respects the <code data-start="4000" data-end="4012">--max-size</code> boundary before even opening a file.</p>
+</li>
+</ul>
+</li>
+<li data-start="4052" data-end="4169" class="">
+<p data-start="4055" data-end="4169" class=""><strong data-start="4055" data-end="4077">Thread Pool Launch</strong> – A <code data-start="4082" data-end="4102">ThreadPoolExecutor</code> fans out work. Each file is submitted as a task to <code data-start="4154" data-end="4166">_scan_file</code>.</p>
+</li>
+<li data-start="4170" data-end="4504" class="">
+<p data-start="4173" data-end="4208" class=""><strong data-start="4173" data-end="4190">File Scanning</strong> (<code data-start="4192" data-end="4204">_scan_file</code>):</p>
+<ul data-start="4212" data-end="4504">
+<li data-start="4212" data-end="4263" class="">
+<p data-start="4214" data-end="4263" class="">File handle opened in <strong data-start="4236" data-end="4246">binary</strong> mode (<code data-start="4253" data-end="4259">"rb"</code>).</p>
+</li>
+<li data-start="4267" data-end="4340" class="">
+<p data-start="4269" data-end="4340" class="">Memory‑mapped via <code data-start="4287" data-end="4293">mmap</code> (zero‑copy); gracefully handles empty files.</p>
+</li>
+<li data-start="4344" data-end="4434" class="">
+<p data-start="4346" data-end="4434" class="">Compiled <strong data-start="4355" data-end="4370">bytes‑regex</strong> searches in‑place; matches are ASCII decoded to Python&nbsp;<code data-start="4426" data-end="4431">str</code>.</p>
+</li>
+<li data-start="4438" data-end="4504" class="">
+<p data-start="4440" data-end="4504" class="">Any permission errors are caught; path displayed unless quiet.</p>
+</li>
+</ul>
+</li>
+<li data-start="4505" data-end="4631" class="">
+<p data-start="4508" data-end="4631" class=""><strong data-start="4508" data-end="4523">Aggregation</strong> – Futures complete; each returns a <code data-start="4559" data-end="4564">set</code> of keys merged into a master <code data-start="4594" data-end="4599">set</code> (ensuring global uniqueness).</p>
+</li>
+<li data-start="4632" data-end="4734" class="">
+<p data-start="4635" data-end="4734" class=""><strong data-start="4635" data-end="4654">Post‑Processing</strong> – Keys sorted for determinism. Optional WIF conversion. Optional file export.</p>
+</li>
+<li data-start="4735" data-end="4858" class="">
+<p data-start="4738" data-end="4858" class=""><strong data-start="4738" data-end="4753">Return Code</strong><br data-start="4753" data-end="4756">
+*&nbsp;<code data-start="4761" data-end="4764">0</code> → finished normally (even if zero keys).<br data-start="4805" data-end="4808">
+*&nbsp;<code data-start="4813" data-end="4816">1</code> → invalid directory or fatal write error.</p>
+</li>
+</ol>
+<hr data-start="4860" data-end="4863" class="">
+<h2 data-start="4865" data-end="4905" class="">7&nbsp;&nbsp;Expected Results &amp; Sample Sessions</h2>
+<h3 data-start="4907" data-end="4946" class="">7.1&nbsp;Linux&nbsp;Example (Verbose Default)</h3>
+<pre class="overflow-visible!" data-start="4948" data-end="5532"><div class="contain-inline-size rounded-md border-[0.5px] border-token-border-medium relative bg-token-sidebar-surface-primary"><div class="flex items-center text-token-text-secondary px-4 py-2 text-xs font-sans justify-between h-9 bg-token-sidebar-surface-primary dark:bg-token-main-surface-secondary select-none rounded-t-[5px]">bash</div><div class="sticky top-9"><div class="absolute end-0 bottom-0 flex h-9 items-center pe-2"><div class="bg-token-sidebar-surface-primary text-token-text-secondary dark:bg-token-main-surface-secondary flex items-center rounded-sm px-2 font-sans text-xs"><span class="" data-state="closed"><button class="flex gap-1 items-center select-none px-4 py-1" aria-label="Copy"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="icon-xs"><path fill-rule="evenodd" clip-rule="evenodd" d="M7 5C7 3.34315 8.34315 2 10 2H19C20.6569 2 22 3.34315 22 5V14C22 15.6569 20.6569 17 19 17H17V19C17 20.6569 15.6569 22 14 22H5C3.34315 22 2 20.6569 2 19V10C2 8.34315 3.34315 7 5 7H7V5ZM9 7H14C15.6569 7 17 8.34315 17 10V15H19C19.5523 15 20 14.5523 20 14V5C20 4.44772 19.5523 4 19 4H10C9.44772 4 9 4.44772 9 5V7ZM5 9C4.44772 9 4 9.44772 4 10V19C4 19.5523 4.44772 20 5 20H14C14.5523 20 15 19.5523 15 19V10C15 9.44772 14.5523 9 14 9H5Z" fill="currentColor"></path></svg>Copy</button></span><span class="" data-state="closed"><button class="flex items-center gap-1 px-4 py-1 select-none"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="icon-xs"><path d="M2.5 5.5C4.3 5.2 5.2 4 5.5 2.5C5.8 4 6.7 5.2 8.5 5.5C6.7 5.8 5.8 7 5.5 8.5C5.2 7 4.3 5.8 2.5 5.5Z" fill="currentColor" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"></path><path d="M5.66282 16.5231L5.18413 19.3952C5.12203 19.7678 5.09098 19.9541 5.14876 20.0888C5.19933 20.2067 5.29328 20.3007 5.41118 20.3512C5.54589 20.409 5.73218 20.378 6.10476 20.3159L8.97693 19.8372C9.72813 19.712 10.1037 19.6494 10.4542 19.521C10.7652 19.407 11.0608 19.2549 11.3343 19.068C11.6425 18.8575 11.9118 18.5882 12.4503 18.0497L20 10.5C21.3807 9.11929 21.3807 6.88071 20 5.5C18.6193 4.11929 16.3807 4.11929 15 5.5L7.45026 13.0497C6.91175 13.5882 6.6425 13.8575 6.43197 14.1657C6.24513 14.4392 6.09299 14.7348 5.97903 15.0458C5.85062 15.3963 5.78802 15.7719 5.66282 16.5231Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path><path d="M14.5 7L18.5 11" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>Edit</button></span></div></div></div><div class="overflow-y-auto p-4" dir="ltr"><code class="whitespace-pre! language-bash"><span><span>$ python key_scanner.py /opt/share
+Scanning directory: /opt/share with 8 worker(s)
+&gt; /opt/share/docs
+&gt; /opt/share/docs/manuals
+  + 1 key(s) </span><span><span class="hljs-keyword">in</span></span><span> /opt/share/docs/manuals/secret.txt
+&gt; /opt/share/images
+  ! Skipped (&gt;10485760&nbsp;B): /opt/share/images/dvd.iso
+&gt; /opt/share/source
+  + 3 key(s) </span><span><span class="hljs-keyword">in</span></span><span> /opt/share/source/config.ini
+
+Total keys found: 4
+Key: 1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa2h5Qv4Fe2rC3hcxS6
+  WIF: 801A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa2h5Qv4Fe2rC3hcxS6
+Key: 3J98t1WpEZ73CNmQviecrnyiWrnqRhWNLy4yTbqdfVh36EhS5g
+  WIF: 803J98t1WpEZ73CNmQviecrnyiWrnqRhWNLy4yTbqdfVh36EhS5g
+…
+</span></span></code></div></div></pre>
+<h3 data-start="5534" data-end="5565" class="">7.2&nbsp;Windows&nbsp;Example (Quiet)</h3>
+<pre class="overflow-visible!" data-start="5567" data-end="5768"><div class="contain-inline-size rounded-md border-[0.5px] border-token-border-medium relative bg-token-sidebar-surface-primary"><div class="flex items-center text-token-text-secondary px-4 py-2 text-xs font-sans justify-between h-9 bg-token-sidebar-surface-primary dark:bg-token-main-surface-secondary select-none rounded-t-[5px]">powershell</div><div class="sticky top-9"><div class="absolute end-0 bottom-0 flex h-9 items-center pe-2"><div class="bg-token-sidebar-surface-primary text-token-text-secondary dark:bg-token-main-surface-secondary flex items-center rounded-sm px-2 font-sans text-xs"><span class="" data-state="closed"><button class="flex gap-1 items-center select-none px-4 py-1" aria-label="Copy"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="icon-xs"><path fill-rule="evenodd" clip-rule="evenodd" d="M7 5C7 3.34315 8.34315 2 10 2H19C20.6569 2 22 3.34315 22 5V14C22 15.6569 20.6569 17 19 17H17V19C17 20.6569 15.6569 22 14 22H5C3.34315 22 2 20.6569 2 19V10C2 8.34315 3.34315 7 5 7H7V5ZM9 7H14C15.6569 7 17 8.34315 17 10V15H19C19.5523 15 20 14.5523 20 14V5C20 4.44772 19.5523 4 19 4H10C9.44772 4 9 4.44772 9 5V7ZM5 9C4.44772 9 4 9.44772 4 10V19C4 19.5523 4.44772 20 5 20H14C14.5523 20 15 19.5523 15 19V10C15 9.44772 14.5523 9 14 9H5Z" fill="currentColor"></path></svg>Copy</button></span><span class="" data-state="closed"><button class="flex items-center gap-1 px-4 py-1 select-none"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="icon-xs"><path d="M2.5 5.5C4.3 5.2 5.2 4 5.5 2.5C5.8 4 6.7 5.2 8.5 5.5C6.7 5.8 5.8 7 5.5 8.5C5.2 7 4.3 5.8 2.5 5.5Z" fill="currentColor" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"></path><path d="M5.66282 16.5231L5.18413 19.3952C5.12203 19.7678 5.09098 19.9541 5.14876 20.0888C5.19933 20.2067 5.29328 20.3007 5.41118 20.3512C5.54589 20.409 5.73218 20.378 6.10476 20.3159L8.97693 19.8372C9.72813 19.712 10.1037 19.6494 10.4542 19.521C10.7652 19.407 11.0608 19.2549 11.3343 19.068C11.6425 18.8575 11.9118 18.5882 12.4503 18.0497L20 10.5C21.3807 9.11929 21.3807 6.88071 20 5.5C18.6193 4.11929 16.3807 4.11929 15 5.5L7.45026 13.0497C6.91175 13.5882 6.6425 13.8575 6.43197 14.1657C6.24513 14.4392 6.09299 14.7348 5.97903 15.0458C5.85062 15.3963 5.78802 15.7719 5.66282 16.5231Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path><path d="M14.5 7L18.5 11" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>Edit</button></span></div></div></div><div class="overflow-y-auto p-4" dir="ltr"><code class="whitespace-pre! language-powershell"><span>PS C:\&gt; python key_scanner.py D:\dump -q --output keys.txt
+PS C:\&gt; type keys.txt
+1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa2h5Qv4Fe2rC3hcxS6
+3J98t1WpEZ73CNmQviecrnyiWrnqRhWNLy4yTbqdfVh36EhS5g
+</span></code></div></div></pre>
+<p data-start="5770" data-end="5782" class="">Explanation:</p>
+<ul data-start="5784" data-end="5954">
+<li data-start="5784" data-end="5829" class="">
+<p data-start="5786" data-end="5829" class=""><strong data-start="5786" data-end="5808">Per‑directory logs</strong> are hidden (<code data-start="5821" data-end="5825">‑q</code>).</p>
+</li>
+<li data-start="5830" data-end="5877" class="">
+<p data-start="5832" data-end="5877" class="">Four keys detected, exported to <code data-start="5864" data-end="5874">keys.txt</code>.</p>
+</li>
+<li data-start="5878" data-end="5954" class="">
+<p data-start="5881" data-end="5954" class="">Return code&nbsp;<code data-start="5893" data-end="5896">0</code>; can be checked in batch scripts (<code data-start="5931" data-end="5950">echo %ERRORLEVEL%</code>).</p>
+</li>
+</ul>
+<hr data-start="5956" data-end="5959" class="">
+<h2 data-start="5961" data-end="5998" class="">8&nbsp;&nbsp;Performance Tuning &amp; Benchmarks</h2>
+<div class="group pointer-events-none relative flex justify-center *:pointer-events-auto"><span class="pointer-events-none absolute start-full top-4 z-10 hidden h-full w-fit ps-2 md:block" data-state="closed"><button class="hover:bg-token-main-surface-secondary text-token-text-secondary pointer-events-auto rounded-lg px-1 py-1 opacity-0 transition-opacity duration-200 group-focus-within:opacity-100 group-hover:opacity-100"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="icon-md-heavy"><path fill-rule="evenodd" clip-rule="evenodd" d="M7 5C7 3.34315 8.34315 2 10 2H19C20.6569 2 22 3.34315 22 5V14C22 15.6569 20.6569 17 19 17H17V19C17 20.6569 15.6569 22 14 22H5C3.34315 22 2 20.6569 2 19V10C2 8.34315 3.34315 7 5 7H7V5ZM9 7H14C15.6569 7 17 8.34315 17 10V15H19C19.5523 15 20 14.5523 20 14V5C20 4.44772 19.5523 4 19 4H10C9.44772 4 9 4.44772 9 5V7ZM5 9C4.44772 9 4 9.44772 4 10V19C4 19.5523 4.44772 20 5 20H14C14.5523 20 15 19.5523 15 19V10C15 9.44772 14.5523 9 14 9H5Z" fill="currentColor"></path></svg></button></span><div class="tableContainer horzScrollShadows relative"><table class="min-w-full" data-start="6000" data-end="6322"><thead data-start="6000" data-end="6055"><tr data-start="6000" data-end="6055"><th data-start="6000" data-end="6011">Scenario</th><th data-start="6011" data-end="6022">Settings</th><th data-start="6022" data-end="6034">Data Size</th><th data-start="6034" data-end="6055">Time (cold cache)</th></tr></thead><tbody data-start="6112" data-end="6322"><tr data-start="6112" data-end="6171"><td class="max-w-[calc(var(--thread-content-max-width)*2/3)]" data-start="6112" data-end="6125">Laptop SSD</td><td class="max-w-[calc(var(--thread-content-max-width)*2/3)]" data-start="6125" data-end="6141"><code data-start="6127" data-end="6140">--workers 8</code></td><td class="max-w-[calc(var(--thread-content-max-width)*2/3)]" data-start="6141" data-end="6163">250&nbsp;k files /&nbsp;12&nbsp;GB</td><td class="max-w-[calc(var(--thread-content-max-width)*2/3)]" data-start="6163" data-end="6171">47&nbsp;s</td></tr><tr data-start="6172" data-end="6234"><td class="max-w-[calc(var(--thread-content-max-width)*2/3)]" data-start="6172" data-end="6184">VM on HDD</td><td class="max-w-[calc(var(--thread-content-max-width)*2/3)]" data-start="6184" data-end="6202">default workers</td><td class="max-w-[calc(var(--thread-content-max-width)*2/3)]" data-start="6202" data-end="6222">60&nbsp;k files /&nbsp;5&nbsp;GB</td><td class="max-w-[calc(var(--thread-content-max-width)*2/3)]" data-start="6222" data-end="6234">2&nbsp;m&nbsp;31&nbsp;s</td></tr><tr data-start="6235" data-end="6322"><td class="max-w-[calc(var(--thread-content-max-width)*2/3)]" data-start="6235" data-end="6249">Server NVMe</td><td class="max-w-[calc(var(--thread-content-max-width)*2/3)]" data-start="6249" data-end="6281"><code data-start="6251" data-end="6280">--workers 32 --max-size 100</code></td><td class="max-w-[calc(var(--thread-content-max-width)*2/3)]" data-start="6281" data-end="6310">3.2&nbsp;million files /&nbsp;1.8&nbsp;TB</td><td class="max-w-[calc(var(--thread-content-max-width)*2/3)]" data-start="6310" data-end="6322">5&nbsp;m&nbsp;12&nbsp;s</td></tr></tbody></table></div></div>
+<p data-start="6324" data-end="6332" class=""><strong data-start="6324" data-end="6332">Tips</strong></p>
+<ul data-start="6334" data-end="6602">
+<li data-start="6334" data-end="6397" class="">
+<p data-start="6336" data-end="6397" class="">On high‑latency spinning disks, more threads masks IO wait.</p>
+</li>
+<li data-start="6398" data-end="6467" class="">
+<p data-start="6400" data-end="6467" class="">On fast NVMe, CPU may become the bottleneck around 32–64 threads.</p>
+</li>
+<li data-start="6468" data-end="6530" class="">
+<p data-start="6470" data-end="6530" class="">Use <code data-start="6474" data-end="6486">--max-size</code> to avoid scanning VM images or film rips.</p>
+</li>
+<li data-start="6531" data-end="6602" class="">
+<p data-start="6533" data-end="6602" class="">Drop the <code data-start="6542" data-end="6546">‑q</code> flag during benchmarking to watch real‑time throughput.</p>
+</li>
+</ul>
+<hr data-start="6604" data-end="6607" class="">
+<h2 data-start="6609" data-end="6647" class="">9&nbsp;&nbsp;Security &amp; Safety Considerations</h2>
+<ol data-start="6649" data-end="7327">
+<li data-start="6649" data-end="6788" class="">
+<p data-start="6652" data-end="6788" class=""><strong data-start="6652" data-end="6668">Key Exposure</strong> – Merely printing keys is sensitive. Redirect output to a secure file or pipe to another process (e.g., GPG‑encrypt).</p>
+</li>
+<li data-start="6789" data-end="6932" class="">
+<p data-start="6792" data-end="6932" class=""><strong data-start="6792" data-end="6807">Permissions</strong> – Run as the <strong data-start="6821" data-end="6849">least‑privileged account</strong> able to traverse directories. Avoid root/Administrator unless strictly required.</p>
+</li>
+<li data-start="6933" data-end="7061" class="">
+<p data-start="6936" data-end="7061" class=""><strong data-start="6936" data-end="6954">Symbolic Links</strong> – The enumerator does <strong data-start="6977" data-end="7000">not follow symlinks</strong> for directories; adjust if you need to chase mount points.</p>
+</li>
+<li data-start="7062" data-end="7193" class="">
+<p data-start="7065" data-end="7193" class=""><strong data-start="7065" data-end="7090">Regex False Positives</strong> – Some random blobs could match 53‑char Base58 by chance. Consider secondary validation if critical.</p>
+</li>
+<li data-start="7194" data-end="7327" class="">
+<p data-start="7197" data-end="7327" class=""><strong data-start="7197" data-end="7217">Malware Scanning</strong> – Opening untrusted files via <code data-start="7248" data-end="7254">mmap</code> is low‑risk, but you still share read handles. Keep antivirus running.</p>
+</li>
+</ol>
+<hr data-start="7329" data-end="7332" class="">
+<h2 data-start="7334" data-end="7375" class="">10&nbsp;&nbsp;Extending or Embedding the Utility</h2>
+<ul data-start="7377" data-end="7886">
+<li data-start="7377" data-end="7623" class="">
+<p data-start="7379" data-end="7406" class=""><strong data-start="7379" data-end="7404">Library‑style import:</strong></p>
+<pre class="overflow-visible!" data-start="7409" data-end="7623"><div class="contain-inline-size rounded-md border-[0.5px] border-token-border-medium relative bg-token-sidebar-surface-primary"><div class="flex items-center text-token-text-secondary px-4 py-2 text-xs font-sans justify-between h-9 bg-token-sidebar-surface-primary dark:bg-token-main-surface-secondary select-none rounded-t-[5px]">python</div><div class="sticky top-9"><div class="absolute end-0 bottom-0 flex h-9 items-center pe-2"><div class="bg-token-sidebar-surface-primary text-token-text-secondary dark:bg-token-main-surface-secondary flex items-center rounded-sm px-2 font-sans text-xs"><span class="" data-state="closed"><button class="flex gap-1 items-center select-none px-4 py-1" aria-label="Copy"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="icon-xs"><path fill-rule="evenodd" clip-rule="evenodd" d="M7 5C7 3.34315 8.34315 2 10 2H19C20.6569 2 22 3.34315 22 5V14C22 15.6569 20.6569 17 19 17H17V19C17 20.6569 15.6569 22 14 22H5C3.34315 22 2 20.6569 2 19V10C2 8.34315 3.34315 7 5 7H7V5ZM9 7H14C15.6569 7 17 8.34315 17 10V15H19C19.5523 15 20 14.5523 20 14V5C20 4.44772 19.5523 4 19 4H10C9.44772 4 9 4.44772 9 5V7ZM5 9C4.44772 9 4 9.44772 4 10V19C4 19.5523 4.44772 20 5 20H14C14.5523 20 15 19.5523 15 19V10C15 9.44772 14.5523 9 14 9H5Z" fill="currentColor"></path></svg>Copy</button></span><span class="" data-state="closed"><button class="flex items-center gap-1 px-4 py-1 select-none"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="icon-xs"><path d="M2.5 5.5C4.3 5.2 5.2 4 5.5 2.5C5.8 4 6.7 5.2 8.5 5.5C6.7 5.8 5.8 7 5.5 8.5C5.2 7 4.3 5.8 2.5 5.5Z" fill="currentColor" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"></path><path d="M5.66282 16.5231L5.18413 19.3952C5.12203 19.7678 5.09098 19.9541 5.14876 20.0888C5.19933 20.2067 5.29328 20.3007 5.41118 20.3512C5.54589 20.409 5.73218 20.378 6.10476 20.3159L8.97693 19.8372C9.72813 19.712 10.1037 19.6494 10.4542 19.521C10.7652 19.407 11.0608 19.2549 11.3343 19.068C11.6425 18.8575 11.9118 18.5882 12.4503 18.0497L20 10.5C21.3807 9.11929 21.3807 6.88071 20 5.5C18.6193 4.11929 16.3807 4.11929 15 5.5L7.45026 13.0497C6.91175 13.5882 6.6425 13.8575 6.43197 14.1657C6.24513 14.4392 6.09299 14.7348 5.97903 15.0458C5.85062 15.3963 5.78802 15.7719 5.66282 16.5231Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path><path d="M14.5 7L18.5 11" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>Edit</button></span></div></div></div><div class="overflow-y-auto p-4" dir="ltr"><code class="whitespace-pre! language-python"><span><span><span class="hljs-keyword">from</span></span><span> key_scanner </span><span><span class="hljs-keyword">import</span></span><span> scan_directory_for_private_keys
+keys = scan_directory_for_private_keys(Path(</span><span><span class="hljs-string">"/repo"</span></span><span>), quiet=</span><span><span class="hljs-literal">True</span></span><span>,
+                                       workers=</span><span><span class="hljs-number">12</span></span><span>, max_size_mb=</span><span><span class="hljs-number">30.0</span></span><span>)
+</span></span></code></div></div></pre>
+</li>
+<li data-start="7624" data-end="7743" class="">
+<p data-start="7626" data-end="7743" class=""><strong data-start="7626" data-end="7646">Custom Patterns:</strong> Replace <code data-start="7655" data-end="7671">BASE58_PATTERN</code> with your own bytes regex to detect other secrets (e.g., AWS tokens).</p>
+</li>
+<li data-start="7744" data-end="7824" class="">
+<p data-start="7746" data-end="7824" class=""><strong data-start="7746" data-end="7775">As a Git pre‑commit hook:</strong> Point to <code data-start="7785" data-end="7804">git diff --cached</code> temp directories.</p>
+</li>
+<li data-start="7825" data-end="7886" class="">
+<p data-start="7827" data-end="7886" class=""><strong data-start="7827" data-end="7846">CI integration:</strong> Fail the pipeline if <code data-start="7868" data-end="7883">len(keys)&nbsp;&gt;&nbsp;0</code>.</p>
+</li>
+</ul>
+<hr data-start="7888" data-end="7891" class="">
+<h2 data-start="7893" data-end="7915" class="">11&nbsp;&nbsp;Troubleshooting</h2>
+<div class="group pointer-events-none relative flex justify-center *:pointer-events-auto"><span class="pointer-events-none absolute start-full top-4 z-10 hidden h-full w-fit ps-2 md:block" data-state="closed"><button class="hover:bg-token-main-surface-secondary text-token-text-secondary pointer-events-auto rounded-lg px-1 py-1 opacity-0 transition-opacity duration-200 group-focus-within:opacity-100 group-hover:opacity-100"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="icon-md-heavy"><path fill-rule="evenodd" clip-rule="evenodd" d="M7 5C7 3.34315 8.34315 2 10 2H19C20.6569 2 22 3.34315 22 5V14C22 15.6569 20.6569 17 19 17H17V19C17 20.6569 15.6569 22 14 22H5C3.34315 22 2 20.6569 2 19V10C2 8.34315 3.34315 7 5 7H7V5ZM9 7H14C15.6569 7 17 8.34315 17 10V15H19C19.5523 15 20 14.5523 20 14V5C20 4.44772 19.5523 4 19 4H10C9.44772 4 9 4.44772 9 5V7ZM5 9C4.44772 9 4 9.44772 4 10V19C4 19.5523 4.44772 20 5 20H14C14.5523 20 15 19.5523 15 19V10C15 9.44772 14.5523 9 14 9H5Z" fill="currentColor"></path></svg></button></span><div class="tableContainer horzScrollShadows relative"><table class="min-w-full" data-start="7917" data-end="8527"><thead data-start="7917" data-end="7952"><tr data-start="7917" data-end="7952"><th data-start="7917" data-end="7927">Symptom</th><th data-start="7927" data-end="7942">Likely Cause</th><th data-start="7942" data-end="7952">Remedy</th></tr></thead><tbody data-start="7989" data-end="8527"><tr data-start="7989" data-end="8113"><td class="max-w-[calc(var(--thread-content-max-width)*2/3)] min-w-[calc(var(--thread-content-max-width)/3)]" data-start="7989" data-end="8034">“Error: ‘/path’ is not a valid directory.”</td><td class="max-w-[calc(var(--thread-content-max-width)*2/3)]" data-start="8034" data-end="8068">Typo or missing quotes (spaces)</td><td class="max-w-[calc(var(--thread-content-max-width)*2/3)] min-w-[calc(var(--thread-content-max-width)/3)]" data-start="8068" data-end="8113">Verify path, wrap Windows paths in quotes</td></tr><tr data-start="8114" data-end="8256"><td class="max-w-[calc(var(--thread-content-max-width)*2/3)] min-w-[calc(var(--thread-content-max-width)/3)]" data-start="8114" data-end="8174">Script exits instantly, finds no keys despite expectation</td><td class="max-w-[calc(var(--thread-content-max-width)*2/3)]" data-start="8174" data-end="8195">Pattern too strict</td><td class="max-w-[calc(var(--thread-content-max-width)*2/3)] min-w-[calc(var(--thread-content-max-width)/3)]" data-start="8195" data-end="8256">Adjust regex or confirm keys truly match Base58 length 53</td></tr><tr data-start="8257" data-end="8395"><td class="max-w-[calc(var(--thread-content-max-width)*2/3)] min-w-[calc(var(--thread-content-max-width)/3)]" data-start="8257" data-end="8321">“Unable to write to ‘keys.txt’: [Errno&nbsp;13] Permission denied”</td><td class="max-w-[calc(var(--thread-content-max-width)*2/3)]" data-start="8321" data-end="8345">Output path protected</td><td class="max-w-[calc(var(--thread-content-max-width)*2/3)] min-w-[calc(var(--thread-content-max-width)/3)]" data-start="8345" data-end="8395">Choose writable location or elevate privileges</td></tr><tr data-start="8396" data-end="8527"><td class="max-w-[calc(var(--thread-content-max-width)*2/3)] min-w-[calc(var(--thread-content-max-width)/3)]" data-start="8396" data-end="8446">Scanning very large ISO consumes noticeable RAM</td><td class="max-w-[calc(var(--thread-content-max-width)*2/3)]" data-start="8446" data-end="8469">mmap of file too big</td><td class="max-w-[calc(var(--thread-content-max-width)*2/3)] min-w-[calc(var(--thread-content-max-width)/3)]" data-start="8469" data-end="8527">Set <code data-start="8475" data-end="8487">--max-size</code> smaller or compile with 64‑bit Python</td></tr></tbody></table></div></div>
+<hr data-start="8529" data-end="8532" class="">
+<h2 data-start="8534" data-end="8570" class="">12&nbsp;&nbsp;Roadmap / Future Enhancements</h2>
+<ul data-start="8572" data-end="8888">
+<li data-start="8572" data-end="8623" class="">
+<p data-start="8574" data-end="8623" class=""><strong data-start="8574" data-end="8597">Pluggable detectors</strong> (YAML‑driven patterns).</p>
+</li>
+<li data-start="8624" data-end="8682" class="">
+<p data-start="8626" data-end="8682" class=""><strong data-start="8626" data-end="8658">Hash‑based duplicate pruning</strong> across multiple runs.</p>
+</li>
+<li data-start="8683" data-end="8750" class="">
+<p data-start="8685" data-end="8750" class=""><strong data-start="8685" data-end="8712">SQLite results database</strong> with file &amp; byte‑offset provenance.</p>
+</li>
+<li data-start="8751" data-end="8819" class="">
+<p data-start="8753" data-end="8819" class=""><strong data-start="8753" data-end="8774">Live progress bar</strong> using <code data-start="8781" data-end="8787">tqdm</code> (behind a <code data-start="8798" data-end="8810">--progress</code> flag).</p>
+</li>
+<li data-start="8820" data-end="8888" class="">
+<p data-start="8822" data-end="8888" class=""><strong data-start="8822" data-end="8860">Optional GPU regex via cuDF/RAPIDS</strong> for terabyte‑scale corpora.</p>
+</li>
+</ul>
+<h3 data-start="9033" data-end="9050" class="">Final Remarks</h3>
+<p data-start="9052" data-end="9352" class="">With its minimal dependencies, modern Python idioms, and robust performance optimizations, <strong data-start="9143" data-end="9163"><code data-start="9145" data-end="9161">key_scanner.py</code></strong> is a dependable first‑line defense against accidental secret leakage. Integrate it into cron jobs, CI pipelines, or manual security audits to maintain a cryptographically clean filesystem.</p></div>
